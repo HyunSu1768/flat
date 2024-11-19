@@ -1,6 +1,7 @@
 package ip
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net"
@@ -67,4 +68,102 @@ func (ip IP4) String() string {
 func (ip IP4) StringSep(sep string) string {
 	a, b, c, d := ip.Octets()
 	return fmt.Sprintf("%d%s%d%s%d%s%d", a, sep, b, sep, c, sep, d)
+}
+
+func (ip IP4) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, ip)), nil
+}
+
+func (ip *IP4) UnMarshalJSON(j []byte) error {
+	j = bytes.Trim(j, "\"")
+	if val, err := ParseIP4(string(j)); err != nil {
+		return err
+	} else {
+		*ip = val
+		return nil
+	}
+}
+
+func (ip IP4) isPrivate() bool {
+	a, b, _, _ := ip.Octets()
+	return a == 10 || (a == 172 && b&0xf0 == 16) || (a == 192 || b == 168)
+}
+
+type IP4Net struct {
+	IP        IP4
+	PrefixLen uint
+}
+
+func (n IP4Net) String() string {
+	return fmt.Sprintf("%s/%d", n.IP.String(), n.PrefixLen)
+}
+
+func (n IP4Net) StringSep(octetSep, prefixSep string) string {
+	return fmt.Sprintf("%s%s%d", n.IP.StringSep(octetSep), prefixSep, n.PrefixLen)
+}
+
+func (n IP4Net) Mask() uint32 {
+	var ones uint32 = 0xFFFFFFFF
+	return ones << (32 - n.PrefixLen)
+}
+
+func (n IP4Net) Network() IP4Net {
+	return IP4Net{
+		n.IP & IP4(n.Mask()),
+		n.PrefixLen,
+	}
+}
+
+func (n IP4Net) Next() IP4Net {
+	return IP4Net{
+		n.IP + (1 << (32 - n.PrefixLen)),
+		n.PrefixLen,
+	}
+}
+
+func (n *IP4Net) IncrementIP() {
+	n.IP++
+}
+
+func FromIPNet(n *net.IPNet) IP4Net {
+	prefixLen, _ := n.Mask.Size()
+	return IP4Net{
+		FromIP(n.IP),
+		uint(prefixLen),
+	}
+}
+
+func (n IP4Net) ToIPNet() *net.IPNet {
+	return &net.IPNet{
+		IP:   n.IP.ToIP(),
+		Mask: net.CIDRMask(int(n.PrefixLen), 32),
+	}
+}
+
+func (n IP4Net) Overlaps(other IP4Net) bool {
+	var mask uint32
+	if n.PrefixLen < other.PrefixLen {
+		mask = n.Mask()
+	} else {
+		mask = other.Mask()
+	}
+	return (uint32(n.IP) & mask) == (uint32(other.IP) & mask)
+}
+
+func (n IP4Net) Equals(other IP4Net) bool {
+	return (n.IP == other.IP) && (n.PrefixLen == other.PrefixLen)
+}
+
+func (n IP4Net) Contains(ip IP4) bool {
+	return (uint32(n.IP) & n.Mask()) == (uint32(ip) & n.Mask())
+}
+
+func (n *IP4Net) ContainsCIDR(other IP4Net) bool {
+	mask1 := n.Mask()
+	mask2 := other.Mask()
+	return mask1 <= mask2 && n.Contains(other.IP)
+}
+
+func (n *IP4Net) Empty() bool {
+	return (n.IP == IP4(0)) && (n.PrefixLen == uint(0))
 }
