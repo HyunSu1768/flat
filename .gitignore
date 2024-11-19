@@ -112,7 +112,7 @@ fabric.properties
 !.idea/codeStyles
 !.idea/runConfigurations
 
-.flat.iml
+flat.iml
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,go
 
