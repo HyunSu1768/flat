@@ -127,4 +127,6 @@ func main() {
 	if err != nil {
 		log.Error("환경 변수에서 플래그를 설정할 수 없습니다.", err)
 	}
+
+	log.Infof("CLI 플래그 설정 : %+v", opts)
 }
