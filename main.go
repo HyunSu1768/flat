@@ -100,7 +100,7 @@ func init() {
 
 	err = flatFlags.Parse(os.Args[1:])
 	if err != nil {
-		log.Error("플래그를 파싱할 수 ", err)
+		log.Error("플래그를 파싱할 수 없습니다.", err)
 		os.Exit(1)
 	}
 
