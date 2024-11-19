@@ -23,7 +23,7 @@ func FromIP(ip net.IP) IP4 {
 		panic("주소가 ipv4가 아닙니다")
 	}
 
-	return FromBytes(ip)
+	return FromBytes(ipv4)
 }
 
 func ParseIP4(s string) (IP4, error) {
@@ -86,7 +86,7 @@ func (ip *IP4) UnMarshalJSON(j []byte) error {
 
 func (ip IP4) isPrivate() bool {
 	a, b, _, _ := ip.Octets()
-	return a == 10 || (a == 172 && b&0xf0 == 16) || (a == 192 || b == 168)
+	return a == 10 || (a == 172 && b&0xf0 == 16) || (a == 192 && b == 168)
 }
 
 type IP4Net struct {
