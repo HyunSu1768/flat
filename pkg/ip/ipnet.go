@@ -167,3 +167,17 @@ func (n *IP4Net) ContainsCIDR(other IP4Net) bool {
 func (n *IP4Net) Empty() bool {
 	return (n.IP == IP4(0)) && (n.PrefixLen == uint(0))
 }
+
+func (n IP4Net) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%s"`, n)), nil
+}
+
+func (n *IP4Net) UnMarshalJSON(j []byte) error {
+	j = bytes.Trim(j, "\"")
+	if _, val, err := net.ParseCIDR(string(j)); err != nil {
+		return err
+	} else {
+		*n = FromIPNet(val)
+		return nil
+	}
+}
