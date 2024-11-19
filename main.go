@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"flat/pkg/version"
 	"fmt"
 	"os"
 
@@ -118,5 +119,8 @@ func usage() {
 }
 
 func main() {
-
+	if opts.version {
+		fmt.Fprintln(os.Stderr, version.Version)
+		os.Exit(0)
+	}
 }
