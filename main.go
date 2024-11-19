@@ -129,4 +129,9 @@ func main() {
 	}
 
 	log.Infof("CLI 플래그 설정 : %+v", opts)
+
+	if opts.subnetLeaseRenewMargin >= 60*24 || opts.subnetLeaseRenewMargin <= 0 {
+		log.Error("subnet-lease-renew-margin가 범위 밖의 값으로 설정되었습니다.")
+		os.Exit(1)
+	}
 }
