@@ -96,6 +96,14 @@ func init() {
 	copyFlag("vmodule")
 	copyFlag("log_backtrace_at")
 
+	flatFlags.Usage = usage
+
+	err = flatFlags.Parse(os.Args[1:])
+	if err != nil {
+		log.Error("플래그를 파싱할 수 없습니다.", err)
+		os.Exit(1)
+	}
+
 	log.Info("초기화가 완료되었습니다.")
 }
 
@@ -103,7 +111,12 @@ func copyFlag(name string) {
 	flatFlags.Var(flag.Lookup(name).Value, flag.Lookup(name).Name, flag.Lookup(name).Usage)
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	flatFlags.PrintDefaults()
+	os.Exit(1)
+}
+
 func main() {
-	var slice flagSlice = []string{"a", "b", "c"}
-	fmt.Println(&slice)
+
 }
