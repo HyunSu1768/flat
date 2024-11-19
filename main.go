@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"flat/pkg/version"
 	"fmt"
 	"os"
 
@@ -103,8 +104,6 @@ func init() {
 		log.Error("플래그를 파싱할 수 없습니다.", err)
 		os.Exit(1)
 	}
-
-	log.Info("초기화가 완료되었습니다.")
 }
 
 func copyFlag(name string) {
@@ -118,5 +117,8 @@ func usage() {
 }
 
 func main() {
-
+	if opts.version {
+		fmt.Fprintln(os.Stderr, version.Version)
+		os.Exit(0)
+	}
 }
