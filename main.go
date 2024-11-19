@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 
 	log "k8s.io/klog/v2"
 )
@@ -84,6 +85,22 @@ func init() {
 	flatFlags.BoolVar(&opts.setNodeNetworkUnavailable, "set-node-network-unavailable", true, "노드 네트워크를 사용할 수 없음으로 설정")
 
 	log.InitFlags(nil)
+
+	err := flag.Set("logtostderr", "true")
+	if err != nil {
+		log.Error("Can't set the logtostderr flag", err)
+		os.Exit(0)
+	}
+
+	copyFlag("v")
+	copyFlag("vmodule")
+	copyFlag("log_backtrace_at")
+
+	log.Info("초기화가 완료되었습니다.")
+}
+
+func copyFlag(name string) {
+	flatFlags.Var(flag.Lookup(name).Value, flag.Lookup(name).Name, flag.Lookup(name).Usage)
 }
 
 func main() {
