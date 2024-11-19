@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/coreos/pkg/flagutil"
 	log "k8s.io/klog/v2"
 )
 
@@ -108,6 +109,11 @@ func init() {
 
 func copyFlag(name string) {
 	flatFlags.Var(flag.Lookup(name).Value, flag.Lookup(name).Name, flag.Lookup(name).Usage)
+
+	err := flagutil.SetFlagsFromEnv(flatFlags, "FLATD")
+	if err != nil {
+		log.Error("환경 변수에서 플래그를 설정할 수 없습니다.", err)
+	}
 }
 
 func usage() {
