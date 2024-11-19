@@ -128,3 +128,39 @@ func GetInterfaceIP6AddrMatch(iface *net.Interface, matchIP net.IP) error {
 
 	return errors.New("Interface에서 주어진 IP6와 일치하는 IP가 존재하지 않습니다.")
 }
+
+func GetDefaultGatewayInterface() (*net.Interface, error) {
+	routes, err := netlink.RouteList(nil, syscall.AF_INET)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, route := range routes {
+		if route.Dst == nil || route.Dst.String() == "0.0.0.0/0" {
+			if route.LinkIndex <= 0 {
+				return nil, errors.New("Default Gateway를 찾았지만, Interface를 결정할 수 없습니다.")
+			}
+			return net.InterfaceByIndex(route.LinkIndex)
+		}
+	}
+
+	return nil, errors.New("Defluat Gateway를 찾을 수 없습니다.")
+}
+
+func GetDefaultV6GatewayInterface() (*net.Interface, error) {
+	routes, err := netlink.RouteList(nil, syscall.AF_INET6)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, route := range routes {
+		if route.Dst == nil || route.Dst.String() == "::/0" {
+			if route.LinkIndex <= 0 {
+				return nil, errors.New("Default V6 Gateway를 찾았지만, Interface를 결정할 수 없습니다.")
+			}
+			return net.InterfaceByIndex(route.LinkIndex)
+		}
+	}
+
+	return nil, errors.New("Defluat V6 Gateway를 찾을 수 없습니다.")
+}
