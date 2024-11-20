@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
+	log "k8s.io/klog/v2"
 	"net"
 	"syscall"
 )
@@ -212,4 +214,75 @@ func GetInterfaceBySpecificIPRouting(ip net.IP) (*net.Interface, net.IP, error) 
 	}
 
 	return nil, nil, errors.New("주어진 IP에 대한 interface를 찾을 수 없습니다")
+}
+
+func DirectRouting(ip net.IP) (bool, error) {
+	routes, err := netlink.RouteGet(ip)
+	if err != nil {
+		return false, fmt.Errorf("%v에 대한 라우트를 확인할 수 없습니다 : %v", ip, err)
+	}
+	if len(routes) == 1 && routes[0].Gw == nil {
+		return true, nil
+	}
+	return false, nil
+}
+
+func EnsureV4AddressOnLink(ipa IP4Net, ipn IP4Net, link netlink.Link) error {
+	addr := netlink.Addr{IPNet: ipa.ToIPNet()}
+	existingAddrs, err := netlink.AddrList(link, unix.AF_INET)
+	if err != nil {
+		return err
+	}
+
+	var hasAddr bool
+	for _, existingAddr := range existingAddrs {
+		if existingAddr.Equal(addr) {
+			hasAddr = true
+		}
+
+		if ipn.Contains(FromIP(existingAddr.IP)) {
+			if err := netlink.AddrDel(link, &existingAddr); err != nil {
+				return fmt.Errorf("%s에서 IP주소 %s를 삭제하는데 실패하였습니다 : %s", link.Attrs().Name, existingAddr.String(), err)
+			}
+			log.Infof("%s에서 IP %s를 삭제하였습니다", link.Attrs().Name, existingAddr.String())
+		}
+	}
+
+	if !hasAddr {
+		if err := netlink.AddrAdd(link, &addr); err != nil {
+			return fmt.Errorf("%s에 IP %s를 추가하는데 실패하였습니다 : %s", link.Attrs().Name, addr.String(), err)
+		}
+	}
+
+	return nil
+}
+
+func EnsureV6AddressOnLink(ipa IP4Net, ipn IP4Net, link netlink.Link) error {
+	addr := netlink.Addr{IPNet: ipa.ToIPNet()}
+	existingAddrs, err := netlink.AddrList(link, unix.AF_INET6)
+	if err != nil {
+		return err
+	}
+
+	var hasAddr bool
+	for _, existingAddr := range existingAddrs {
+		if existingAddr.Equal(addr) {
+			hasAddr = true
+		}
+
+		if ipn.Contains(FromIP(existingAddr.IP)) {
+			if err := netlink.AddrDel(link, &existingAddr); err != nil {
+				return fmt.Errorf("%s에서 IPv6 주소 %s를 삭제하는데 실패하였습니다 : %s", link.Attrs().Name, existingAddr.String(), err)
+			}
+			log.Infof("%s에서 IPv6 %s를 삭제하였습니다", link.Attrs().Name, existingAddr.String())
+		}
+	}
+
+	if !hasAddr {
+		if err := netlink.AddrAdd(link, &addr); err != nil {
+			return fmt.Errorf("%s에 IPv6 %s를 추가하는데 실패하였습니다 : %s", link.Attrs().Name, addr.String(), err)
+		}
+	}
+
+	return nil
 }
